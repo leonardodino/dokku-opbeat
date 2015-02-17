@@ -14,14 +14,15 @@ fi
 echo "-----> Notifying Opbeat ...";
 
 rev=$(cd "$DOKKU_ROOT/$1" && git log -n 1 --pretty=format:%H);
+shortrev=$(cd "$DOKKU_ROOT/$1" && git rev-parse --short HEAD);
 branch=$(cd "$DOKKU_ROOT/$1" && git rev-parse --abbrev-ref HEAD);
 url="https://opbeat.com/api/v1/organizations/$OPBEAT_ORGANIZATION_ID/apps/$OPBEAT_APP_ID/releases/";
 resp="$(curl -s -i --connect-timeout 20 -m 50  "$url" -H "Authorization: Bearer $OPBEAT_SECRET_TOKEN" -d rev="$rev" -d branch="$branch" -d status=completed)";
 status_code="$(echo "$resp" | grep HTTP/1.1 | awk {'print $2'})";
 
 if [ $status_code -eq 202 ]; then
-  echo "=====> Opbeat successfully created release: [$branch:$rev].";
+  echo "=====> Opbeat successfully created release: [$shortrev].";
 else
-  echo "=====> Opbeat failed creating release: [$branch:$rev]
+  echo "=====> Opbeat failed creating release: [$shortrev]
 $resp";
 fi
