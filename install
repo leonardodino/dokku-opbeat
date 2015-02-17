@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
 
-apt-get update && apt-get install -y curl
+# let this to server provisioners (ansible)
+# apt-get update && apt-get install -y curl
 
