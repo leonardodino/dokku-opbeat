@@ -17,15 +17,26 @@ set +e;
 rev=$(cd "$DOKKU_ROOT/$1" && git log -n 1 --pretty=format:%H);
 shortrev=$(cd "$DOKKU_ROOT/$1" && git rev-parse --short HEAD || git rev-parse --short master);
 branch=$(cd "$DOKKU_ROOT/$1" && git rev-parse --abbrev-ref HEAD || echo master);
+opstatus="completed"
+
+if [[ -z "$OPBEAT_SIMPLE" ]]; then
+  [[ -r "/etc/machine-codename" ]] && machinename=$(cat /etc/machine-codename);
+  [[ -z "$machinename" && -r "/etc/machine-id" ]] && machinename=$(cat /etc/machine-id);
+  [[ -z "$machinename" && -r "/var/lib/dbus/machine-id" ]] && machinename=$(cat /var/lib/dbus/machine-id);
+  [[ ! -z "$machinename" ]] && opstatus="machine-completed" && echo "-----> machine: $machinename";
+fi;
+
+echo "-----> release: $branch:$shortrev"
 set -e;
 
 url="https://opbeat.com/api/v1/organizations/$OPBEAT_ORGANIZATION_ID/apps/$OPBEAT_APP_ID/releases/";
-resp="$(curl -s -i --connect-timeout 20 -m 50  "$url" -H "Authorization: Bearer $OPBEAT_SECRET_TOKEN" -d rev="$rev" -d branch="$branch" -d status=completed)";
+resp="$(curl -s -i --connect-timeout 20 -m 50 "$url" -H "Authorization: Bearer $OPBEAT_SECRET_TOKEN" -d rev="$rev" -d branch="$branch" -d status="$opstatus" -d machine="$machinename")";
 status_code="$(echo "$resp" | grep HTTP/1.1 | awk {'print $2'})";
 
 if [ $status_code -eq 202 ]; then
-  echo "=====> Opbeat successfully created release: [$shortrev].";
+  echo "=====> Opbeat successfully received release: [$shortrev].";
 else
   echo "=====> Opbeat failed creating release: [$shortrev]
 $resp";
 fi
+
